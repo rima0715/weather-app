@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天気予報</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>天気予報</h1>
+  
+  <!-- 地域を選択するドロップダウン -->
+  <label for="regionSelect">地域を選択:</label>
+  <select id="regionSelect">
+    <option value="130000">東京</option>
+    <option value="110000">埼玉</option>
+    <option value="120000">千葉</option>
+  </select>
+
+  <!-- 天気データを表示するエリア -->
+  <div id="weatherInfo">
+    <p>天気情報を取得中...</p>
+  </div>
+
+  <footer>
+    © 2024 天気予報アプリ
+  </footer>
+
+  <script>
+    // 地域選択ドロップダウンと天気情報表示エリアを取得
+    const regionSelect = document.getElementById("regionSelect");
+    const weatherInfo = document.getElementById("weatherInfo");
+
+    // 天気データを取得し、表示する関数
+    async function fetchWeather(regionCode) {
+      const url = `https://www.jma.go.jp/bosai/forecast/data/forecast/${regionCode}.json`;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error("天気データの取得に失敗しました");
+        }
+        const data = await response.json();
+
+        // 天気データを解析して表示
+        displayWeather(data);
+      } catch (error) {
+        weatherInfo.innerHTML = `<p>エラー: ${error.message}</p>`;
+      }
+    }
+
+    // 天気データを表示する関数
+    function displayWeather(data) {
+      const areaName = data[0].timeSeries[0].areas[0].area.name; // 地域名
+      const weathers = data[0].timeSeries[0].areas[0].weathers; // 天気情報 (今日, 明日, 明後日)
+      const temps = data[0].timeSeries[2].areas[0].temps; // 気温情報 (今日, 明日, 明後日)
+
+      // 明後日の気温データが存在するか確認
+      const tempMinDayAfterTomorrow = temps[4] || "N/A"; // 明後日の最低気温
+      const tempMaxDayAfterTomorrow = temps[5] || "N/A"; // 明後日の最高気温
+
+      // 天気情報をHTMLに表示
+      weatherInfo.innerHTML = `
+        <h2>${areaName}の天気</h2>
+        <div class="forecast">
+          <div class="day">
+            <h3>今日</h3>
+            <p>天気: ${weathers[0]}</p>
+            <p>最低気温: ${temps[0] || "N/A"}℃</p>
+            <p>最高気温: ${temps[1] || "N/A"}℃</p>
+          </div>
+          <div class="day">
+            <h3>明日</h3>
+            <p>天気: ${weathers[1]}</p>
+            <p>最低気温: ${temps[2] || "N/A"}℃</p>
+            <p>最高気温: ${temps[3] || "N/A"}℃</p>
+          </div>
+          <div class="day">
+            <h3>明後日</h3>
+            <p>天気: ${weathers[2]}</p>
+            <p>最低気温: ${tempMinDayAfterTomorrow}℃</p>
+            <p>最高気温: ${tempMaxDayAfterTomorrow}℃</p>
+          </div>
+        </div>
+      `;
+    }
+
+    // 地域選択が変更されたときのイベントリスナー
+    regionSelect.addEventListener("change", (event) => {
+      const selectedRegion = event.target.value;
+      fetchWeather(selectedRegion); // 選択された地域の天気を取得
+    });
+
+    // 初期状態として東京の天気を表示
+    fetchWeather(regionSelect.value);
+  </script>
+</body>
+</html>
